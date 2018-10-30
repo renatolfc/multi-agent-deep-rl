@@ -192,7 +192,7 @@ class VisualAdvantageNetwork(VisualQNetwork):
 class DDPGActor(nn.Module):
     """Actor (Policy) Model."""
 
-    def __init__(self, state_size, action_size, seed, fc1_units=256, fc2_units=128):
+    def __init__(self, state_size, action_size, seed, fc1_units=400, fc2_units=300):
         """Initialize parameters and build model.
         Params
         ======
@@ -224,7 +224,7 @@ class DDPGActor(nn.Module):
 class DDPGCritic(nn.Module):
     """Critic (Value) Model."""
 
-    def __init__(self, state_size, action_size, seed, fcs1_units=256, fc2_units=128):
+    def __init__(self, state_size, action_size, seed, fcs1_units=400, fc2_units=300):
         """Initialize parameters and build model.
         Params
         ======

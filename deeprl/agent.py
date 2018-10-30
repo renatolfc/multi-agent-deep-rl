@@ -16,7 +16,7 @@ from .model import DDPGActor, DDPGCritic
 from .model import AdvantageNetwork as QNetwork
 from .model import VisualAdvantageNetwork as VisualQNetwork
 
-BUFFER_SIZE = int(1e6)  # Replay buffer size
+BUFFER_SIZE = int(1e5)  # Replay buffer size
 BATCH_SIZE = 128        # Minibatch size
 GAMMA = 0.99            # Discount factor
 TAU = 1e-3              # target parameters soft update
@@ -57,6 +57,7 @@ class OUNoise:
 
     def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):
         """Initialize parameters and noise process."""
+        self.size = size
         self.mu = mu * np.ones(size)
         self.theta = theta
         self.sigma = sigma
@@ -70,7 +71,7 @@ class OUNoise:
     def sample(self):
         """Update internal state and return it as a noise sample."""
         x = self.state
-        dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(self.size)
         self.state = x + dx
         return self.state
 
