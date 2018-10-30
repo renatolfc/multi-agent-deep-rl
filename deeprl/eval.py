@@ -10,92 +10,64 @@ from collections import deque
 import torch
 import numpy as np
 
-from .agent import Agent
+from .agent import Agent, DDPGAgent
 from .util import load_environment, UnityEnvironmentWrapper, get_state
-from .util import STACK_SIZE, show_agent
 from .train import reset_deque
 
 
-def evaldqn(env, checkpointfn='checkpoint.pth'):
-    """Function that uses Deep Q Networks to learn environments.
-
-    Parameters
-    ----------
-        env: Environment
-            execution environment
-        checkpointfn: str
-            Name of the file to load network parameters
-    """
+def evalddpg(env, checkpointfn='checkpoint-%d.pth'):
+    'Function that evalutes DDPG Agents.'
     brain_name = env.brain_names[0]
     brain = env.brains[brain_name]
     env_info = env.reset(train_mode=True)[brain_name]
 
     action_size = brain.vector_action_space_size
-    state = env_info.vector_observations[0]
-    state_size = len(state)
+    n_agents = len(env_info.agents)
+    states = get_state(env_info, n_agents=n_agents)
+    state_size = len(states) if n_agents == 1 else len(states[0])
 
-    if state_size == 0:
-        use_visual = True
-        initial_state = get_state(env_info, use_visual)
-        state_size = list(initial_state.shape)
-        state_size.insert(2, STACK_SIZE)
-        state_size = tuple(state_size)
-
-    agent = Agent.load(checkpointfn, use_visual=True)
-
-    state_deque = reset_deque(initial_state)
+    agents = [DDPGAgent.load(checkpointfn % i) for i in range(n_agents)]
     env_info = env.reset(train_mode=False)[brain_name]
-    state = get_state(env_info, use_visual)
-    state_deque.append(state)
+    states = get_state(env_info, n_agents=n_agents)
 
-    score = 0
-    first = True
+    scores = np.zeros(n_agents)
+
+    input('Press Enter to continue')
+
     while True:
-        state = np.stack(state_deque, axis=-1) \
-                .squeeze(axis=0).transpose(0, -1, 1, 2)
+        actions = np.vstack([agent.act(state) for agent, state in zip(agents, states)])
 
-        action = agent.act(state)
-        env_info = env.step(action)[brain_name]
+        env_info = env.step(actions)[brain_name]
+        next_states = get_state(env_info, n_agents=n_agents)
+        rewards = env_info.rewards
+        dones = env_info.local_done
 
-        next_state = get_state(env_info, use_visual)
-        state_deque.append(next_state)
-        next_state = np.stack(state_deque, axis=-1) \
-                .squeeze(axis=0).transpose(0, -1, 1, 2)
+        for i in range(n_agents):
+            agents[i].step(states[i], actions[i], rewards[i], next_states[i], dones[i], learning=False)
 
-        reward = env_info.rewards[0]
-        done = env_info.local_done[0]
+        states = next_states
+        scores += rewards
 
-        show_agent(state, next_state, action)
-        if first:
-            input('Press enter to continue')
-            first = False
-
-        agent.step(
-            state,
-            action,
-            reward,
-            next_state,
-            done,
-        )
-
-        score += reward
-        if done:
+        if any(dones):
             break
+
     logging.info(
-        'Final score: %g', score
+        'Final scores: %s', scores
     )
-    return score
+
+    return scores
+
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluates a learned agent')
     parser.add_argument('--checkpoint', dest='checkpoint', action='store',
-                        default='checkpoint.pth')
+                        default='checkpoint-%d.pth')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
 
     env = load_environment()
-    evaldqn(env, checkpointfn=args.checkpoint)
+    evalddpg(env, checkpointfn=args.checkpoint)
 
 if __name__ == '__main__':
     main()
