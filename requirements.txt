@@ -1,0 +1,7 @@
+torch>=0.4.0
+unityagents>=0.4.0
+numpy
+matplotlib
+jupyter
+notebook
+tensorflow
