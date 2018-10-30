@@ -192,7 +192,7 @@ class VisualAdvantageNetwork(VisualQNetwork):
 class DDPGActor(nn.Module):
     """Actor (Policy) Model."""
 
-    def __init__(self, state_size, action_size, seed, fc1_units=400, fc2_units=300):
+    def __init__(self, state_size, action_size, seed, fc1_units=256, fc2_units=128):
         """Initialize parameters and build model.
         Params
         ======
@@ -224,7 +224,7 @@ class DDPGActor(nn.Module):
 class DDPGCritic(nn.Module):
     """Critic (Value) Model."""
 
-    def __init__(self, state_size, action_size, seed, fcs1_units=400, fc2_units=300):
+    def __init__(self, state_size, action_size, seed, fcs1_units=256, fc2_units=128):
         """Initialize parameters and build model.
         Params
         ======
@@ -236,8 +236,8 @@ class DDPGCritic(nn.Module):
         """
         super(DDPGCritic, self).__init__()
         self.seed = torch.manual_seed(seed)
-        self.fcs1 = nn.Linear(state_size, fcs1_units)
-        self.fc2 = nn.Linear(fcs1_units + action_size, fc2_units)
+        self.fcs1 = nn.Linear(state_size + action_size, fcs1_units)
+        self.fc2 = nn.Linear(fcs1_units, fc2_units)
         self.fc3 = nn.Linear(fc2_units, 1)
         self.reset_parameters()
 
@@ -248,7 +248,7 @@ class DDPGCritic(nn.Module):
 
     def forward(self, state, action):
         """Build a critic (value) network that maps (state, action) pairs -> Q-values."""
-        xs = F.relu(self.fcs1(state))
-        x = torch.cat((xs, action), dim=1)
+        xs = torch.cat((state, action), dim=1)
+        x = F.relu(self.fcs1(xs))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
