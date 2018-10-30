@@ -1,0 +1,2 @@
+Tennis.app.zip filter=lfs diff=lfs merge=lfs -text
+Tennis_Linux.zip filter=lfs diff=lfs merge=lfs -text
