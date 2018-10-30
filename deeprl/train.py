@@ -35,8 +35,8 @@ def reset_deque(state, stack_size=STACK_SIZE):
     return state_deque
 
 
-def ddpg(env, n_episodes=2000, max_t=1000, checkpointfn='checkpoint.pth', load_checkpoint=False,
-         update_every=2, n_updates=1, solution_threshold=30.0):
+def ddpg(env, n_episodes=10000, max_t=1000, checkpointfn='checkpoint.pth', load_checkpoint=False,
+         update_every=2, n_updates=1, solution_threshold=0.5):
     '''Runs DDPG in an environment'''
 
     brain_name = env.brain_names[0]
@@ -91,7 +91,7 @@ def ddpg(env, n_episodes=2000, max_t=1000, checkpointfn='checkpoint.pth', load_c
         # Store scores for all agents
         [agent.scores.append(score) for agent, score in zip(agents, scores)]
 
-        avg_score = np.mean([agent.scores[-100:] for agent in agents])
+        avg_score = np.mean(np.max([agent.scores[-100:] for agent in agents], axis=0))
 
         logging.debug(
             'Episode {}\tAverage Score: {:.3f}\tCurrent (avg) Score: {:.3f}'
@@ -266,7 +266,7 @@ def main():
     logging.getLogger().setLevel(logging.DEBUG)
 
     env = UnityEnvironmentWrapper(load_environment())
-    ddpg(env, n_episodes=3000,
+    ddpg(env, n_episodes=30000,
         checkpointfn=args.checkpoint, load_checkpoint=args.load_chkpt)
 
 if __name__ == '__main__':
